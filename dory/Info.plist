@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>com.google.oauth</string>
+            <key>GIDClientID</key>
+            <string>291795876648-jul571i80msdh2bgnlnrn0brohbnvlad.apps.googleusercontent.com</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.291795876648-jul571i80msdh2bgnlnrn0brohbnvlad</string>
+			</array>
+		</dict>
+	</array>
+    <key>NSSpeechRecognitionUsageDescription</key>
+    <string>We convert your voice into text for notes and questions.</string>
+
+    <key>NSMicrophoneUsageDescription</key>
+    <string>Microphone access is needed for voice input.</string>
+
+    <key>UIAppFonts</key>
+    <array>
+        <string>WorkSans-Regular.ttf</string>
+        <string>WorkSans-Medium.ttf</string>
+        <string>WorkSans-SemiBold.ttf</string>
+        <string>WorkSans-Bold.ttf</string>
+
+        <string>Poppins-Medium.ttf</string>
+        <string>Poppins-SemiBold.ttf</string>
+        <string>Poppins-Bold.ttf</string>
+    </array>
+</dict>
+</plist>

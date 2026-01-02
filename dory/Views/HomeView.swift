@@ -216,6 +216,7 @@ struct HomeView: View {
                }
                
                if showVoiceBlob {
+        
                    AIVoiceInputBlob(
                        viewModel: voiceInputViewModel,
                        onClose: {
@@ -224,9 +225,8 @@ struct HomeView: View {
                            }
                        }
                    )
+                   .frame(width: 410, height:800)
                    .ignoresSafeArea()
-                   .transition(.opacity)
-                   .zIndex(10)
                }
 
 

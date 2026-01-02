@@ -116,9 +116,10 @@ struct ChatView: View {
             Button {
                 sendMessage()
             } label: {
-                Image(systemName: "arrow.up.circle.fill")
-                    .font(.system(size: 32))
-                    .foregroundColor(.blue)
+                Image(systemName: "arrow.uturn.forward")
+                    .font(.system(size: 28))
+                    .frame(width: 50, height: 50)
+                    .glassEffect(.clear.interactive())
             }
             .disabled(
                 vm.inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty

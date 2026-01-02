@@ -111,7 +111,7 @@ struct AIVoiceInputBlob: View {
                 // Success message
                 if let successMessage = viewModel.successMessage {
                     Text(successMessage)
-                        .foregroundColor(.green)
+                        .foregroundColor(.white)
                         .padding()
                         .glassEffect(.clear.interactive(), in: .rect(cornerRadius: 16))
                         .onAppear {
@@ -156,13 +156,11 @@ struct AIVoiceInputBlob: View {
     private func handleStop() {
         viewModel.stopRecording()
         
-        // If there's a transcript, send it to backend
         if !viewModel.transcript.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             Task {
                 await viewModel.ingest()
             }
         } else {
-            // No transcript, just close
             onClose()
         }
     }

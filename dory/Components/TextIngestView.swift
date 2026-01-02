@@ -17,6 +17,7 @@ struct TextIngestView: View {
             
             TextField("Enter your text…", text: $viewModel.text)
                 .padding()
+                .lineLimit(1...5)
                 .glassEffect()
                 .frame(width: 300)
             

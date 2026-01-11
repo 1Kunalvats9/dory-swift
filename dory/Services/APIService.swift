@@ -70,7 +70,7 @@ class APIService {
         return decoder
     }()
     
-    private func request<T: Decodable>(
+    func request<T: Decodable>(
         endpoint: String,
         method: String = "GET",
         body: Encodable? = nil,
@@ -124,7 +124,8 @@ class APIService {
                 throw APIError.unauthorized
                 
             default:
-                if let errorResponse = try? APIService.jsonDecoder.decode(ErrorResponse.self, from: data) {
+                // Backend error format: {"success": false, "error": "...", "message": "..."}
+                if let errorResponse = try? JSONDecoder().decode(ErrorResponse.self, from: data) {
                     throw APIError.httpError(
                         statusCode: httpResponse.statusCode,
                         message: errorResponse.error
@@ -148,42 +149,91 @@ class APIService {
             let idToken: String
         }
         
-        return try await request(
-            endpoint: Constants.Endpoints.googleLogin,
-            method: "POST",
-            body: LoginBody(idToken: idToken)
-        )
+        guard let url = URL(string: Constants.baseURL + Constants.Endpoints.googleLogin) else {
+            throw APIError.invalidURL
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONEncoder().encode(LoginBody(idToken: idToken))
+        
+        let (data, response) = try await URLSession.shared.data(for: request)
+        
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw APIError.invalidResponse
+        }
+        
+        switch httpResponse.statusCode {
+        case 200...299:
+            // Debug: Print raw response
+            if let jsonString = String(data: data, encoding: .utf8) {
+                print("✅ Auth Response JSON: \(jsonString)")
+            }
+            
+            // Try to decode with plain decoder
+            let decoder = JSONDecoder()
+            do {
+                return try decoder.decode(AuthResponse.self, from: data)
+            } catch let decodingError as DecodingError {
+                // Print detailed decoding error
+                print("❌ Decoding Error: \(decodingError)")
+                if let jsonString = String(data: data, encoding: .utf8) {
+                    print("❌ Response JSON was: \(jsonString)")
+                }
+                switch decodingError {
+                case .keyNotFound(let key, let context):
+                    print("❌ Missing key: \(key.stringValue) at path: \(context.codingPath.map { $0.stringValue }.joined(separator: "."))")
+                case .typeMismatch(let type, let context):
+                    print("❌ Type mismatch for type: \(type) at path: \(context.codingPath.map { $0.stringValue }.joined(separator: "."))")
+                case .valueNotFound(let type, let context):
+                    print("❌ Value not found for type: \(type) at path: \(context.codingPath.map { $0.stringValue }.joined(separator: "."))")
+                case .dataCorrupted(let context):
+                    print("❌ Data corrupted at path: \(context.codingPath.map { $0.stringValue }.joined(separator: ".")), error: \(context.debugDescription)")
+                @unknown default:
+                    print("❌ Unknown decoding error")
+                }
+                throw APIError.decodingError
+            } catch {
+                print("❌ Error decoding auth response: \(error)")
+                if let jsonString = String(data: data, encoding: .utf8) {
+                    print("❌ Response JSON was: \(jsonString)")
+                }
+                throw APIError.decodingError
+            }
+        case 401:
+            throw APIError.unauthorized
+        default:
+            if let errorResponse = try? APIService.jsonDecoder.decode(ErrorResponse.self, from: data) {
+                throw APIError.httpError(
+                    statusCode: httpResponse.statusCode,
+                    message: errorResponse.error
+                )
+            }
+            if let jsonString = String(data: data, encoding: .utf8) {
+                print("❌ Auth Error Response: \(jsonString)")
+            }
+            throw APIError.httpError(
+                statusCode: httpResponse.statusCode,
+                message: "Unknown error"
+            )
+        }
     }
     
-    func getCurrentUser() async throws -> UserResponse {
-        return try await request(
-            endpoint: Constants.Endpoints.me,
-            requiresAuth: true
-        )
-    }
-    
-    func deleteAccount() async throws -> MessageResponse {
-        return try await request(
-            endpoint: Constants.Endpoints.deleteAccount,
-            method: "DELETE",
-            requiresAuth: true
-        )
-    }
+    // Note: /api/auth/me endpoint doesn't exist in backend
+    // Removed getCurrentUser() and deleteAccount() methods
 }
 
 extension APIService {
 
     func sendMessage(
         message: String,
-        chatId: String?,
+        chatId: String? = nil,
         useRAG: Bool = true
     ) async throws -> ChatResponse {
 
-        let body = ChatRequest(
-            message: message,
-            chatId: chatId,
-            useRAG: useRAG
-        )
+        // Backend only expects message, not chatId or useRAG
+        let body = ChatRequest(message: message)
 
         let response: ChatResponse = try await request(
             endpoint: "/api/chat",
@@ -206,14 +256,47 @@ extension APIService {
     }
 }
 
+// Backend returns: {"success": true, "message": "...", "data": Document}
+// Backend Document model has no JSON tags, so fields are capitalized: ID, UserID, Filename, etc.
 struct DocumentResponse: Decodable {
     let success: Bool
+    let message: String?
     let data: DocumentData
 }
 
 struct DocumentData: Decodable {
-    let id: String
-    let status: String
+    let ID: String  // Backend sends "ID" (UUID as string)
+    let UserID: String?  // Backend sends "UserID" (UUID as string)
+    let Filename: String?
+    let FileURL: String?
+    let PublicID: String?
+    let FileType: String?
+    let Content: String?
+    let Status: String
+    let UploadedAt: String?  // Backend sends time.Time which serializes to string
+    
+    // CodingKeys to map backend's capitalized field names
+    enum CodingKeys: String, CodingKey {
+        case ID
+        case UserID
+        case Filename
+        case FileURL
+        case PublicID
+        case FileType
+        case Content
+        case Status
+        case UploadedAt
+    }
+    
+    // Computed properties for easier use (camelCase)
+    var id: String { ID }
+    var user_id: String? { UserID }
+    var filename: String? { Filename }
+    var file_url: String? { FileURL }
+    var file_type: String? { FileType }
+    var content: String? { Content }
+    var status: String { Status }
+    var uploaded_at: String? { UploadedAt }
 }
 
 extension Data {
@@ -296,16 +379,18 @@ extension APIService {
     ) async throws -> IngestResponse {
         
         let body = IngestRequest(
-            text: text,
+            content: text,
             filename: filename
         )
         
         return try await request(
-            endpoint: "/api/ingest",
+            endpoint: "/api/ingest/text",
             method: "POST",
             body: body,
             requiresAuth: true
         )
     }
 }
+
+
 

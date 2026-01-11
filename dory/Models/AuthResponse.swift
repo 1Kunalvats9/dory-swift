@@ -7,12 +7,8 @@
 
 import Foundation
 
+// Backend returns: {"token": "...", "user": {...}}
 struct AuthResponse: Codable {
-    let success: Bool
-    let data: AuthData
-}
-
-struct AuthData: Codable {
     let token: String
     let user: User
 }

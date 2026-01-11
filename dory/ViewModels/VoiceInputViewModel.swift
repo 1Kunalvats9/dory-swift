@@ -103,9 +103,8 @@ class SpeechInputViewModel: ObservableObject {
             
             documentId = response.data.documentId
             chunksStored = response.data.chunksStored
-            successMessage = "Ingested successfully (\(response.data.chunksStored) chunks)"
+            successMessage = "Ingested successfully"
             
-            // Clear transcript after successful ingestion
             transcript = ""
             
         } catch let error as APIError {

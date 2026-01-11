@@ -24,18 +24,17 @@ struct LoopingVideoBackgroundView: UIViewRepresentable {
 
         let playerLayer = AVPlayerLayer(player: player)
         playerLayer.videoGravity = .resizeAspectFill
-        
-        // Store references in coordinator
+    
         context.coordinator.player = player
         context.coordinator.playerLayer = playerLayer
         context.coordinator.shouldPlay = shouldPlay
 
         containerView.layer.addSublayer(playerLayer)
         
-        // Set initial frame
+   
         playerLayer.frame = UIScreen.main.bounds
 
-        // Loop video
+       
         let observer = NotificationCenter.default.addObserver(
             forName: .AVPlayerItemDidPlayToEndTime,
             object: player.currentItem,
@@ -47,7 +46,7 @@ struct LoopingVideoBackgroundView: UIViewRepresentable {
             }
         }
         
-        // Store observer for cleanup
+      
         context.coordinator.observer = observer
 
         if shouldPlay {
@@ -64,7 +63,7 @@ struct LoopingVideoBackgroundView: UIViewRepresentable {
             playerLayer.frame = UIScreen.main.bounds
         }
         
-        // Update play state
+       
         let wasPlaying = context.coordinator.shouldPlay
         context.coordinator.shouldPlay = shouldPlay
         

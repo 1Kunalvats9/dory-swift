@@ -22,6 +22,10 @@ struct HomeView: View {
     @State private var showPDFPicker = false
     @State private var selectedPDFURL: URL?
     @State private var showVoiceBlob = false
+    
+    @State private var showDetectedEventsSheet = false
+    @State private var detectedEventsDocumentId: String?
+
 
 
     @Namespace var namespace
@@ -190,12 +194,20 @@ struct HomeView: View {
 
                }
 
-               if case .completed = pdfIngestViewModel.state {
-                   VStack{
+               if case .completed(let documentId) = pdfIngestViewModel.state {
+                   VStack {
                        Text("PDF ready to chat!")
                            .padding()
                            .glassEffect(.clear.interactive())
-                       Button("Okay"){
+
+                       Button("Review detected events") {
+                           print("Opening detected events for document:", documentId)
+                           detectedEventsDocumentId = documentId
+                           showDetectedEventsSheet = true
+                       }
+                       .glassEffect(.clear.interactive())
+
+                       Button("Okay") {
                            pdfIngestViewModel.state = .idle
                        }
                        .glassEffect(.clear.interactive())
@@ -246,6 +258,29 @@ struct HomeView: View {
                    print("PDF selection failed:", error)
                }
            }
+           .sheet(isPresented: $showDetectedEventsSheet) {
+               if let documentId = detectedEventsDocumentId {
+                   DetectedEventsView(
+                       documentId: documentId,
+                       onConfirm: { selectedEvents in
+                           Task {
+                                   do {
+                                       try await EventKitService.shared.createReminders(from: selectedEvents)
+                                       showDetectedEventsSheet = false
+                                   } catch {
+                                       print("Failed to create reminders:", error)
+                                       
+                                   }
+                               }
+                           showDetectedEventsSheet = false
+                       },
+                       onDismiss: {
+                           showDetectedEventsSheet = false
+                       }
+                   )
+               }
+           }
+
 
            .toolbar {
                ToolbarItem(placement: .navigationBarTrailing) {

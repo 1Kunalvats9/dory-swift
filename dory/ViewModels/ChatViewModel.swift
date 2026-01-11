@@ -10,27 +10,17 @@ import Combine
 
 struct ChatResponse: Decodable {
     let success: Bool
+    let message: String?
     let data: ChatData
 }
 
 struct ChatData: Decodable {
-    let chatId: String
     let response: String
-    let retrievedChunks: [RetrievedChunk]
-}
-
-struct RetrievedChunk: Decodable, Identifiable {
-    let chunk_id: String
-    let document_id: String
-    let score: Double
-
-    var id: String { chunk_id }
+    let sources: [String]
 }
 
 struct ChatRequest: Encodable {
     let message: String
-    let chatId: String?
-    let useRAG: Bool
 }
 
 
@@ -44,24 +34,19 @@ struct ChatMessage: Identifiable {
 @MainActor
 final class ChatViewModel: ObservableObject {
 
-    // MARK: - UI State
 
     @Published var messages: [ChatMessage] = []
     @Published var inputText: String = ""
     @Published var isLoading = false
     @Published var errorMessage: String?
 
-    // MARK: - Chat Context
-
     private(set) var chatId: String?
 
-    // MARK: - Actions
 
     func sendMessage(useRAG: Bool = true) async {
         let trimmed = inputText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
 
-        // Add user message immediately
         messages.append(ChatMessage(text: trimmed, isUser: true))
         let messageToSend = trimmed
         inputText = ""
@@ -75,10 +60,6 @@ final class ChatViewModel: ObservableObject {
                 useRAG: useRAG
             )
 
-            // Persist chatId for future messages
-            chatId = response.data.chatId
-
-            // Add AI response
             messages.append(
                 ChatMessage(
                     text: response.data.response,
@@ -88,17 +69,14 @@ final class ChatViewModel: ObservableObject {
 
         } catch let error as APIError {
             errorMessage = error.localizedDescription
-            print("❌ API Error: \(error.localizedDescription)")
+            print("API Error: \(error.localizedDescription)")
         } catch {
             errorMessage = error.localizedDescription
-            print("❌ Error: \(error.localizedDescription)")
+            print("Error: \(error.localizedDescription)")
         }
 
         isLoading = false
     }
-
-    // MARK: - Reset (Optional)
-
     func startNewChat() {
         chatId = nil
         messages.removeAll()

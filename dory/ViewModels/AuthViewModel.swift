@@ -31,11 +31,9 @@ class AuthViewModel: ObservableObject {
         if let user = user {
             self.user = user
             self.isAuthenticated = true
-            print("User is authenticated: \(user.email)")
         } else {
             self.user = nil
             self.isAuthenticated = false
-            print("User is not authenticated")
         }
         
         isLoading = false
@@ -48,10 +46,9 @@ class AuthViewModel: ObservableObject {
         do {
             let response = try await AuthService.shared.signInWithGoogle()
             
-            self.user = response.data.user
+            self.user = response.user
             self.isAuthenticated = true
-            
-            print("Login successful: \(response.data.user.email)")
+        
             
         } catch {
             self.errorMessage = error.localizedDescription
@@ -61,7 +58,6 @@ class AuthViewModel: ObservableObject {
         isLoading = false
     }
     
-    // MARK: - Sign Out
     
     func signOut() {
         AuthService.shared.signOut()
@@ -69,6 +65,5 @@ class AuthViewModel: ObservableObject {
         self.user = nil
         self.isAuthenticated = false
         
-        print("Signed out")
     }
 }

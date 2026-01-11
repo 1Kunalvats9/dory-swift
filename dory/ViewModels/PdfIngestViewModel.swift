@@ -18,13 +18,37 @@ enum PDFIngestState {
 
 struct PDFIngestResponse: Decodable {
     let success: Bool
+    let message: String?
     let data: PDFIngestData
 }
 
 struct PDFIngestData: Decodable {
-    let documentId: String
-    let message: String
-    let cloudinaryUrl: String?
+    let ID: String
+    let UserID: String?
+    let Filename: String
+    let FileURL: String?
+    let PublicID: String?
+    let FileType: String?
+    let Content: String?
+    let Status: String
+    let UploadedAt: String?
+    
+    var id: String { ID }
+    var documentId: String { ID }
+    var filename: String { Filename }
+    var status: String { Status }
+    
+    enum CodingKeys: String, CodingKey {
+        case ID
+        case UserID
+        case Filename
+        case FileURL
+        case PublicID
+        case FileType
+        case Content
+        case Status
+        case UploadedAt
+    }
 }
 
 
@@ -72,7 +96,7 @@ class PDFIngestViewModel: ObservableObject {
                         return
                     }
                 } catch {
-                    // silent retry
+                
                 }
             }
         }

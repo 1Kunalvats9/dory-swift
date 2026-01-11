@@ -22,6 +22,10 @@
 
     <key>NSMicrophoneUsageDescription</key>
     <string>Microphone access is needed for voice input.</string>
+    
+    <key>NSRemindersUsageDescription</key>
+    <string>Dory uses reminders to notify you about important events detected in your documents.</string>
+
 
     <key>UIAppFonts</key>
     <array>
